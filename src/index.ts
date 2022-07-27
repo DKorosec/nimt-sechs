@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { maxAI, minAI, randomAI } from "./lib/ai";
+import { maxAI, minAI, randomAI, someSenseAI } from "./lib/ai";
 import { createBoard, IBoard } from "./lib/board";
 import { generateCards } from "./lib/cards";
 import { createPlayer, IPlayer } from "./lib/player";
@@ -26,7 +26,7 @@ function runSimulation({ players, verboseLogging, game }: {
 }) {
     const { totalCardsCount, cardsPerPlayerCount, cardStacksCount } = game;
     const cards = generateCards(totalCardsCount);
-    const board = createBoard();
+    const board = createBoard(cards.at(-1)!.number);
     fairShuffle(cards);
     board.setInitialCards(new Array(cardStacksCount).fill(undefined).map(() => cards.shift()!));
     for (const p of players) {
@@ -68,11 +68,11 @@ function runSimulation({ players, verboseLogging, game }: {
 }
 
 function main() {
-    const gameIts = 1000;
+    const gameIts = 10000;
     const totalCardsCount = 60
     const cardsPerPlayerCount = 8;
     const cardStacksCount = 4;
-    const aiPlayerStrategies = [randomAI, minAI, maxAI];
+    const aiPlayerStrategies = [randomAI, minAI, maxAI, someSenseAI];
     const data = initializeStatistics(aiPlayerStrategies)
     for (let i = 0; i < gameIts; i++) {
         const players = aiPlayerStrategies.map((strategy) => createPlayer(strategy.create));
@@ -80,7 +80,8 @@ function main() {
         applyPartialStatistics(data, players);
     }
     fs.writeFileSync('./out/game-analysis.csv', gameStatsToCSV(data), { encoding: 'utf8' });
-    data.forEach(pEntry => {
+    data.sort((a, b) => a.history.at(-1)!.pileAcc! - b.history.at(-1)!.pileAcc!).forEach((pEntry, i) => {
+        console.log(`#${i+1} Place!`);
         console.log(pEntry.metadata.aiName)
         console.log('total points:', pEntry.history.at(-1)!.pileAcc, 'total wins:', pEntry.history.at(-1)!.best, 'total worst:', pEntry.history.at(-1)!.worst);
     });

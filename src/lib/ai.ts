@@ -63,8 +63,56 @@ function createMaxAI(player: IPlayer): IStrategyAI {
     }
 }
 
+function createSomeSenseAI(player: IPlayer): IStrategyAI {
+    return {
+        pickCard(board) {
+            const cardOptions = player.hands.map(card => {
+                for (let sti = 0; sti < board.stacks.length; sti++) {
+                    if (board.canStackAcceptCard(sti, card)) {
+                        return {
+                            card,
+                            accept: true,
+                            causeStackSwap: board.isStackFull(sti),
+                            stackIdx: sti,
+                            stackSize: board.stacks[sti].length,
+                            stackWorth: board.stackWorth(sti),
+                            diffNext: board.getStackTopLimit(sti) - card.number
+                        };
+                    }
+                }
+                return {
+                    card,
+                    accept: false,
+                    isSwapCard: true
+                }
+            });
+            const probablySafeOpt = cardOptions.filter(opt => opt.accept && !opt.causeStackSwap).sort((a, b) => a.card.number - b.card.number)[0];
+            if (probablySafeOpt) {
+                return player.removeCard(probablySafeOpt.card.number);
+            }
+            // pick the best card for stack (the highest, and hope others will fuck up instead of you, h3h3)
+            const probablyDangerousYoloOpt = cardOptions.filter(opt => opt.accept && opt.causeStackSwap).sort((a, b) => a.diffNext! - b.diffNext!)[0];
+            if (probablyDangerousYoloOpt) {
+                return player.removeCard(probablyDangerousYoloOpt.card.number);
+            }
+            //use one of your low cards to make a swap.
+            const playLowAndSwap = cardOptions.filter(opt => opt.isSwapCard).sort((a, b) => a.card.number - b.card.number)[0];
+            if(playLowAndSwap) {
+                return player.removeCard(playLowAndSwap.card.number);
+            }
+            throw new Error('This should not happen. If it did, then either the program is wrong or your computer needs an exorcists');
+        },
+        onBoardStackSwap(stacks) {
+            // TODO improve: look at your cards and select the best deck that could fit your swap.
+            // but until then, be human, be greedy.
+            return minIndex(stacks, sumStack);
+        }
+    }
+}
+
 const randomAI: AIStrategyObject = { name: 'random only', create: createRandomAI };
 const minAI: AIStrategyObject = { name: 'min only', create: createMinAI };
 const maxAI: AIStrategyObject = { name: 'max only', create: createMaxAI };
+const someSenseAI: AIStrategyObject = { name: 'some sense', create: createSomeSenseAI };
 
-export { randomAI, minAI, maxAI };
+export { randomAI, minAI, maxAI, someSenseAI };
