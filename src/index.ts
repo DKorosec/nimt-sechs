@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { maxAI, minAI, randomAI, someSenseAI } from "./lib/ai";
+import * as AI from "./lib/ai";
 import { createBoard, IBoard } from "./lib/board";
 import { generateCards } from "./lib/cards";
 import { createPlayer, IPlayer } from "./lib/player";
@@ -72,7 +72,7 @@ function main() {
     const totalCardsCount = 60
     const cardsPerPlayerCount = 8;
     const cardStacksCount = 4;
-    const aiPlayerStrategies = [randomAI, minAI, maxAI, someSenseAI];
+    const aiPlayerStrategies = Object.values(AI);
     const data = initializeStatistics(aiPlayerStrategies)
     for (let i = 0; i < gameIts; i++) {
         const players = aiPlayerStrategies.map((strategy) => createPlayer(strategy.create));
